@@ -1,66 +1,109 @@
-function newButton(text, callback, position) {
-    var a = document.createElement('button');
-    a.innerHTML = text;
-    a.style.backgroundColor = '#44c767';
-    a.style.backgroundImage = 'linear-gradient(#44c767, #64e787)';
-    a.style.borderRadius = '28px';
-    a.style.border = '1px solid #18ab29';
-    a.style.display = 'inline-block';
-    a.style.color = '#ffffff';
-    a.style.fontSize = '17px';
-    a.style.padding = '11px 31px';
-    a.style.position = 'fixed';
-    a.style.right = `${10 + ((150 + 15) * (position - 1))}px`;
-    a.style.width = '150px';
-    a.style.top = '7px';
-    a.style.zIndex = '999';
-    document.body.appendChild(a);
-    a.addEventListener('click', callback);
-}
-
-function getContent(nameBase) {
-    let content = 'Name;Mobile Phone\n'; // Cabeçalhos das colunas
-    let counter = 1;
-    
-    for (let phone in window.sContacts) {
-        content += `${nameBase}${counter};${phone}\n`; // Adiciona o nome base fornecido e incrementa o número
-        counter++;
+class ContactSaver {
+    constructor() {
+        this.contacts = new Map();
+        this.initialized = false;
+        this.API_URL = 'https://script.google.com/macros/s/AKfycbx5pA6zZk2d5IvPRba_awMZ6kj2kZ2OcXJNH43xikSfsHxuhwhFKhA53rEAbgtBcqM/exec';
     }
-    
-    return content;
-}
 
-function init() {
-    newButton('Salvar Contatos', () => {
-        let nameBase = prompt('Com qual nome deseja salvar os contatos?'); // Pede ao usuário o nome base
-        if (nameBase) {
-            download(getContent(nameBase)); // Passa o nome base para a função getContent
+    async verifyKey(key) {
+        try {
+            const response = await fetch(`${this.API_URL}?key=${key}`);
+            const data = await response.json();
+            return data.valid;
+        } catch (error) {
+            console.error('Erro ao verificar chave:', error);
+            return false;
         }
-    }, 1);
-    getNumbers();
-    document.querySelector('#pane-side').addEventListener('scroll', getNumbers);
-}
+    }
 
-function download(content) {
-    var data = 'data:application/octet-stream,' + encodeURIComponent(content);
-    var a = document.createElement('a');
-    a.href = data;
-    a.download = 'contacts.csv';
-    a.click();
-}
+    createButton(text, callback, position) {
+        const button = document.createElement('button');
+        Object.assign(button.style, {
+            backgroundColor: '#44c767',
+            backgroundImage: 'linear-gradient(#44c767, #64e787)',
+            borderRadius: '28px',
+            border: '1px solid #18ab29',
+            display: 'inline-block',
+            color: '#ffffff',
+            fontSize: '17px',
+            padding: '11px 31px',
+            position: 'fixed',
+            right: `${10 + ((150 + 15) * (position - 1))}px`,
+            width: '150px',
+            top: '7px',
+            zIndex: '999',
+            cursor: 'pointer'
+        });
 
-function getNumbers() {
-    if (window.sContacts === undefined) window.sContacts = {};
-    document.querySelectorAll('span[title]').forEach(element => {
-        let phone = element.innerText || element.getAttribute('title');
-        if (/^\+?\d[\d\s\-\(\)]+$/.test(phone)) {
-            phone = phone.trim().replace(/\s+/g, ' ');
-            window.sContacts[phone] = phone;
-            element.style.backgroundColor = '#00ff00';
-        } else {
-            element.style.backgroundColor = 'inherit';
+        button.innerHTML = text;
+        button.addEventListener('click', callback);
+        document.body.appendChild(button);
+    }
+
+    generateCSV(nameBase) {
+        const headers = ['Name', 'Mobile Phone'];
+        const rows = Array.from(this.contacts.entries()).map(
+            ([phone, _], index) => [`${nameBase}${index + 1}`, phone]
+        );
+        
+        return [headers, ...rows]
+            .map(row => row.join(';'))
+            .join('\n');
+    }
+
+    downloadCSV(content, filename = 'contacts.csv') {
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    scanContacts() {
+        document.querySelectorAll('span[title]').forEach(element => {
+            const phone = element.innerText || element.getAttribute('title');
+            if (/^\+?\d[\d\s\-\(\)]+$/.test(phone)) {
+                const formattedPhone = phone.trim().replace(/\s+/g, ' ');
+                this.contacts.set(formattedPhone, true);
+                element.style.backgroundColor = '#90EE90';
+            } else {
+                element.style.backgroundColor = 'inherit';
+            }
+        });
+    }
+
+    async init(key) {
+        if (this.initialized) return;
+        
+        const isKeyValid = await this.verifyKey(key);
+        if (!isKeyValid) {
+            alert('Chave inválida!');
+            return;
         }
-    });
+
+        this.createButton('Salvar Contatos', async () => {
+            const nameBase = prompt('Com qual nome deseja salvar os contatos?');
+            if (nameBase) {
+                const csv = this.generateCSV(nameBase);
+                this.downloadCSV(csv, `contacts_${new Date().toISOString().slice(0,10)}.csv`);
+            }
+        }, 1);
+
+        this.scanContacts();
+        
+        const paneSize = document.querySelector('#pane-side');
+        if (paneSize) {
+            paneSize.addEventListener('scroll', () => this.scanContacts());
+        }
+
+        this.initialized = true;
+    }
 }
 
-init();
+// A inicialização será feita através do popup.js

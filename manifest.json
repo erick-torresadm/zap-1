@@ -1,25 +1,30 @@
-{
-  "manifest_version": 3,
-  "name": "WhatsApp Contact Saver, by ErickTorres",
-  "version": "1.0",
-  "permissions": [
-    "activeTab",
-    "scripting"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+function doGet(e) {
+  const key = e.parameter.key;
+  const sheet = SpreadsheetApp.openById('1yPSfY-ngjk741swEBalUm0WFL8zcgDfKLaIPc_CbCZ8').getSheetByName('Keys');
+  
+  const keys = sheet.getRange('A:B').getValues();
+  let keyValid = false;
+  let rowIndex = -1;
+  
+  // Procura a chave e verifica se já foi usada
+  for (let i = 0; i < keys.length; i++) {
+    if (keys[i][0] === key ) {
+      rowIndex = i;
+      if (keys[i][1] === 'used') {
+        keyValid = false;
+        break;
+      } else {
+        keyValid = true;
+        break;
+      }
     }
-  },
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
   }
+  
+  // Marca a chave como usada
+  if (keyValid) {
+    sheet.getRange(rowIndex + 1, 2).setValue('used');
+  }
+  
+  // Retorna se a chave é válida ou não
+  return ContentService.createTextOutput(JSON.stringify({valid: keyValid})).setMimeType(ContentService.MimeType.JSON);
 }

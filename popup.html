@@ -3,8 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selecionar Contatos</title>
+    <title>WhatsApp Contact Saver</title>
     <style>
+        body {
+            width: 300px;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        input {
+            width: 80%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
         #activate {
             background-color: #44c767;
             background-image: linear-gradient(#44c767, #64e787);
@@ -14,23 +32,29 @@
             font-size: 17px;
             padding: 11px 31px;
             cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
+            width: 80%;
+            transition: all 0.3s ease;
         }
 
         #activate:hover {
             background-color: #5cbf2a;
-            background-image: linear-gradient(#5cbf2a, #6dcf4b);
+        }
+
+        .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
         }
     </style>
 </head>
 <body>
-
-    <button id="activate">Salvar Contatos</button>
-
-    <script src="popup.js"></script> <!-- Referência ao JavaScript separado -->
+    <div class="container">
+        <h2>WhatsApp Contact Saver</h2>
+        <input type="text" id="keyInput" placeholder="Digite sua chave de acesso">
+        <div id="errorMessage" class="error-message">Chave inválida</div>
+        <button id="activate">Salvar Contatos</button>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>
